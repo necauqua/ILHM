@@ -49,7 +49,7 @@ public class IntLongHashMap {
     }
 
     private void checkResize() {
-        if(size >= Math.min(keys.length * loadFactor, keys.length - 1)) {
+        if(size >= Math.max(1, Math.min((int) (keys.length * loadFactor), keys.length - 1))) {
             int[] oldKeys = keys;
             long[] oldValues = values;
             keys = new int[keys.length * 2];
