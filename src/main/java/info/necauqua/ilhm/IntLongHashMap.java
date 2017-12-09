@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 /**
  * Very simple hash map with open addressing, integer keys and long values.
+ *
+ * Note: {@link Integer#MIN_VALUE} cannot be used as a key in this implementation.
  */
 public class IntLongHashMap {
 
@@ -65,7 +67,7 @@ public class IntLongHashMap {
     }
 
     private int index(int key) {
-        int hash = (key >> 15) ^ key; // also makes so that EMPTY is never a hash of something
+        int hash = (key >> 15) ^ key;
         return hash % keys.length;
     }
 
@@ -80,6 +82,7 @@ public class IntLongHashMap {
 
     /**
      * Assigns given value at given key in this hash map.
+     * Remember that {@link Integer#MIN_VALUE} cannot be used as a key.
      *
      * @param key   integer key.
      * @param value long value to be assigned.
