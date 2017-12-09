@@ -67,7 +67,8 @@ public class IntLongHashMap {
     }
 
     private int index(int key) {
-        int hash = (key >> 15) ^ key;
+        // hashing function is just an bitwise version of Math.abs
+        int hash = key & Integer.MAX_VALUE;
         return hash % keys.length;
     }
 
