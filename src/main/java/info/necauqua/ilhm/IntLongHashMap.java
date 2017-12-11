@@ -29,10 +29,7 @@ public class IntLongHashMap {
      * Creates new map with default start size of 16 and load factor of 0.75
      */
     public IntLongHashMap() {
-        keys = new int[16];
-        values = new long[16];
-        loadFactor = 0.75F;
-        Arrays.fill(keys, EMPTY);
+        this(16, 0.75F);
     }
 
     /**
