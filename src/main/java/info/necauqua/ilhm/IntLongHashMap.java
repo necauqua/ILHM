@@ -1,7 +1,5 @@
 package info.necauqua.ilhm;
 
-import java.util.Arrays;
-
 /**
  * Very simple hash map with open addressing, integer keys and long values.
  *
@@ -19,54 +17,56 @@ public class IntLongHashMap {
 
     private static final int EMPTY = Integer.MIN_VALUE;
 
-    private int[] keys;
-    private long[] values;
+    private int[] data;
 
     private final float loadFactor;
-    private int size = 0;
+    private int filled = 0, maxFilled = 0, size = 0;
 
     /**
      * Creates new map with default start size of 16 and load factor of 0.75
      */
     public IntLongHashMap() {
-        this(16, 0.75F);
+        this(4, 0.75F);
     }
 
     /**
      * Creates new map with custom starting size and load factor.
      * Useful if you already know which number of entries to expect.
      *
-     * @param startSize  starting size of the key and value arrays.
+     * @param startPow   starting size of data array is determined as (2 ^ startPow) * 3.
      * @param loadFactor determines how much of the array should be filled
      *                   to double it.
      */
-    public IntLongHashMap(int startSize, float loadFactor) {
-        keys = new int[startSize];
-        values = new long[startSize];
+    public IntLongHashMap(int startPow, float loadFactor) {
+        size = 1 << startPow;
+        maxFilled = (int) (size * loadFactor);
+        data = new int[size * 3];
         this.loadFactor = loadFactor;
-        Arrays.fill(keys, EMPTY);
+        for(int i = 0, len = data.length; i < len; i += 3) {
+            data[i] = EMPTY;
+        }
     }
 
     private void checkResize() {
-        if(size >= Math.max(1, Math.min((int) (keys.length * loadFactor), keys.length - 1))) {
-            int[] oldKeys = keys;
-            long[] oldValues = values;
-            keys = new int[keys.length * 2];
-            values = new long[values.length * 2];
-            Arrays.fill(keys, EMPTY);
-            for(int i = 0; i < oldKeys.length; i++) {
-                int key = oldKeys[i];
+        if(filled >= maxFilled) {
+            size <<= 1;
+            maxFilled = (int) (size * loadFactor);
+            int[] old = data;
+            data = new int[size * 3];
+            for(int i = 0, len = data.length; i < len; i += 3) {
+                data[i] = EMPTY;
+            }
+            for(int i = 0, len = old.length; i < len; i += 3) {
+                int key = old[i];
                 if(key != EMPTY) {
-                    put(key, oldValues[i]);
+                    put(key, ((long) old[i + 1]) << 32 | old[i + 2] & 0xFFFFFFFFL);
                 }
             }
         }
     }
 
     private int index(int key) {
-        // hashing function is just an bitwise version of Math.abs
-        int hash = key & Integer.MAX_VALUE;
-        return hash % keys.length;
+        return key & (size - 1); // this also strips sign bit
     }
 
     /**
@@ -75,7 +75,7 @@ public class IntLongHashMap {
      * @return Number of key-value pairs stored in this map.
      */
     public int size() {
-        return size;
+        return filled;
     }
 
     /**
@@ -88,19 +88,21 @@ public class IntLongHashMap {
     public void put(int key, long value) {
         checkResize();
 
-        for(int i = index(key); ; ++i) {
-            if(i == keys.length) {
+        for(int i = index(key) * 3, len = data.length; ; i += 3) {
+            if(i == len) {
                 i = 0;
             }
-            int k = keys[i];
+            int k = data[i];
             if(k == EMPTY) {
-                keys[i] = key;
-                values[i] = value;
-                ++size;
+                data[i] = key;
+                data[i + 1] = (int) (value >> 32);
+                data[i + 2] = (int) value;
+                ++filled;
                 return;
             }
             if(k == key) {
-                values[i] = value;
+                data[i + 1] = (int) (value >> 32);
+                data[i + 2] = (int) value;
                 return;
             }
         }
@@ -114,16 +116,16 @@ public class IntLongHashMap {
      * @return assigned value or {@link #NULL}.
      */
     public long get(int key) {
-        for(int i = index(key); ; ++i) {
-            if(i == keys.length) {
+        for(int i = index(key) * 3, len = data.length; ; i += 3) {
+            if(i == len) {
                 i = 0;
             }
-            int k = keys[i];
+            int k = data[i];
             if(k == EMPTY) {
                 return NULL;
             }
             if(k == key) {
-                return values[i];
+                return ((long) data[i + 1]) << 32 | data[i + 2] & 0xFFFFFFFFL;
             }
         }
     }
@@ -136,11 +138,11 @@ public class IntLongHashMap {
      * @return true if there is an associated value with this key.
      */
     public boolean contains(int key) {
-        for(int i = index(key); ; ++i) {
-            if(i == keys.length) {
+        for(int i = index(key) * 3, len = data.length; ; i += 3) {
+            if(i == len) {
                 i = 0;
             }
-            int k = keys[i];
+            int k = data[i];
             if(k == EMPTY) {
                 return false;
             }
