@@ -56,6 +56,7 @@ public class IntLongHashMap {
             for(int i = 0, len = data.length; i < len; i += 3) {
                 data[i] = EMPTY;
             }
+            filled = 0;
             for(int i = 0, len = old.length; i < len; i += 3) {
                 int key = old[i];
                 if(key != EMPTY) {
