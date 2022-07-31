@@ -1,11 +1,12 @@
 
 # Gradle
-.gradle/
-build/
+/.gradle
+/build
 
 # IntelliJ
-out/
-.idea/
-*.ipr
-*.iws
-*.iml
+/out
+/.idea
+
+# and VSCode too, huh
+/.vscode
+/bin
